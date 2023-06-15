@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: e2e-mate
+  labels:
+    app: e2e-mate
+spec:
+  ports:
+  - port: 8000
+    targetPort: 8000
+  selector:
+    app: e2e-mate
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: e2e-mate
+spec:
+  selector:
+    matchLabels:
+      app: e2e-mate
+  serviceName: "e2e-mate"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: e2e-mate
+    spec:
+      serviceAccount: jialei-starwhale
+      serviceAccountName: jialei-starwhale
+      containers:
+      - name: e2e-mate
+        image: 10.131.0.2:5000/e2e-mate:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: web
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    e2e-mate.ingress.kubernetes.io/proxy-body-size: 1g
+  name: e2e-mate
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: e.pre.intra.starwhale.ai
+    http:
+      paths:
+      - backend:
+          service:
+            name: e2e-mate
+            port:
+              number: 8000
+        path: /
+        pathType: Prefix
+status:
+  loadBalancer: {}
